@@ -5,42 +5,60 @@ import 'package:math_expressions/math_expressions.dart' hide Stack;
 void main() {
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
-    home: ModernGlassCalculator(),
+    home: PremiumCalculator(),
   ));
 }
 
-class ModernGlassCalculator extends StatefulWidget {
-  const ModernGlassCalculator({super.key});
+class PremiumCalculator extends StatefulWidget {
+  const PremiumCalculator({super.key});
 
   @override
-  _ModernGlassCalculatorState createState() => _ModernGlassCalculatorState();
+  State<PremiumCalculator> createState() => _PremiumCalculatorState();
 }
 
-class _ModernGlassCalculatorState extends State<ModernGlassCalculator> {
+class _PremiumCalculatorState extends State<PremiumCalculator> {
   String equation = "0";
   String result = "0";
 
   void onBtnClick(String val) {
     setState(() {
-      if (val == "C") {
+      if (val == "AC") {
         equation = "0";
         result = "0";
       } else if (val == "=") {
         try {
-          String finalEquation = equation.replaceAll('x', '*');
+          // Replace display symbols with math logic symbols
+          String finalEquation = equation
+              .replaceAll('x', '*')
+              .replaceAll('÷', '/')
+              .replaceAll('sin(', 'sin(')
+              .replaceAll('cos(', 'cos(')
+              .replaceAll('tan(', 'tan(')
+              .replaceAll('%', '/100');
+
+          // Check if brackets are closed, if not close them automatically
+          int openBrackets = '('.allMatches(finalEquation).length;
+          int closeBrackets = ')'.allMatches(finalEquation).length;
+          while (openBrackets > closeBrackets) {
+            finalEquation += ')';
+            closeBrackets++;
+          }
+
           Parser p = Parser();
           Expression exp = p.parse(finalEquation);
           ContextModel cm = ContextModel();
           double eval = exp.evaluate(EvaluationType.REAL, cm);
+          
           result = eval.toString();
-          if (result.endsWith(".0")) {
-            result = result.substring(0, result.length - 2);
-          }
+          if (result.endsWith(".0")) result = result.substring(0, result.length - 2);
         } catch (e) {
-          result = "Error";
+          result = "Syntax Error"; 
         }
       } else {
-        if (equation == "0") {
+        // Smart Scientific Logic: Adds function with opening bracket
+        if (val == "sin" || val == "cos" || val == "tan") {
+          equation = (equation == "0") ? "$val(" : equation + "$val(";
+        } else if (equation == "0") {
           equation = val;
         } else {
           equation += val;
@@ -49,38 +67,32 @@ class _ModernGlassCalculatorState extends State<ModernGlassCalculator> {
     });
   }
 
-  Widget buildGlassBtn(String txt, Color clr, {bool isLarge = false}) {
+  Widget buildButton(String text, Color bgColor, {Color textColor = Colors.white}) {
     return Expanded(
-      flex: isLarge ? 2 : 1,
       child: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: GestureDetector(
-          onTap: () => onBtnClick(txt),
+        padding: const EdgeInsets.all(4.0),
+        child: InkWell(
+          onTap: () => onBtnClick(text),
+          borderRadius: BorderRadius.circular(15),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(15),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Container(
-                height: 75,
+                padding: const EdgeInsets.symmetric(vertical: 18),
                 decoration: BoxDecoration(
-                  color: clr.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      spreadRadius: 1,
-                    )
-                  ],
+                  color: bgColor.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: Colors.white.withOpacity(0.05), width: 1),
                 ),
                 child: Center(
                   child: Text(
-                    txt,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w400,
+                    text,
+                    style: TextStyle(
+                      color: textColor, 
+                      fontSize: 18, 
+                      fontWeight: FontWeight.w300, // Thin font for 2026 look
+                      letterSpacing: 1,
                     ),
                   ),
                 ),
@@ -95,102 +107,79 @@ class _ModernGlassCalculatorState extends State<ModernGlassCalculator> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
-          ),
-        ),
-        child: Stack(
+      backgroundColor: const Color(0xFF020408),
+      body: SafeArea(
+        child: Column(
           children: [
-            // Decorative background blobs for glass effect
-            Positioned(
-              top: 100,
-              right: -30,
+            // --- DISPLAY SECTION ---
+            Expanded(
+              flex: 3,
               child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.blueAccent.withOpacity(0.3),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 200,
-              left: -40,
-              child: Container(
-                width: 180,
-                height: 180,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.purpleAccent.withOpacity(0.25),
-                ),
-              ),
-            ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
-                  alignment: Alignment.bottomRight,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+                alignment: Alignment.bottomRight,
+                child: SingleChildScrollView(
+                  reverse: true,
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(
-                        equation,
-                        style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 32),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        result,
-                        style: const TextStyle(color: Colors.white, fontSize: 85, fontWeight: FontWeight.w200),
-                      ),
+                      Text(equation, style: const TextStyle(color: Colors.white38, fontSize: 24, fontWeight: FontWeight.w200)),
+                      const SizedBox(height: 12),
+                      Text(result, style: const TextStyle(color: Colors.white, fontSize: 58, fontWeight: FontWeight.w100)),
                     ],
                   ),
                 ),
-                const Divider(color: Colors.white12, thickness: 1, indent: 30, endIndent: 30),
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Column(
-                    children: [
-                      Row(children: [
-                        buildGlassBtn("C", Colors.redAccent),
-                        buildGlassBtn("(", Colors.white10),
-                        buildGlassBtn(")", Colors.white10),
-                        buildGlassBtn("/", Colors.orangeAccent),
-                      ]),
-                      Row(children: [
-                        buildGlassBtn("7", Colors.white10),
-                        buildGlassBtn("8", Colors.white10),
-                        buildGlassBtn("9", Colors.white10),
-                        buildGlassBtn("x", Colors.orangeAccent),
-                      ]),
-                      Row(children: [
-                        buildGlassBtn("4", Colors.white10),
-                        buildGlassBtn("5", Colors.white10),
-                        buildGlassBtn("6", Colors.white10),
-                        buildGlassBtn("-", Colors.orangeAccent),
-                      ]),
-                      Row(children: [
-                        buildGlassBtn("1", Colors.white10),
-                        buildGlassBtn("2", Colors.white10),
-                        buildGlassBtn("3", Colors.white10),
-                        buildGlassBtn("+", Colors.orangeAccent),
-                      ]),
-                      Row(children: [
-                        buildGlassBtn("0", Colors.white10, isLarge: true),
-                        buildGlassBtn(".", Colors.white10),
-                        buildGlassBtn("=", Colors.greenAccent),
-                      ]),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 30),
-              ],
+              ),
+            ),
+            // --- BUTTONS SECTION ---
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 24, 12, 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.02),
+                borderRadius: const BorderRadius.only(topLeft: Radius.circular(40), topRight: Radius.circular(40)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Row 1: Scientific Functions
+                  Row(children: [
+                    buildButton("sin", Colors.white), 
+                    buildButton("cos", Colors.white), 
+                    buildButton("tan", Colors.white), 
+                    buildButton("%", Colors.white)
+                  ]),
+                  // Row 2: Numbers and Operator
+                  Row(children: [
+                    buildButton("7", Colors.white), 
+                    buildButton("8", Colors.white), 
+                    buildButton("9", Colors.white), 
+                    buildButton("÷", Colors.blueAccent)
+                  ]),
+                  // Row 3: Numbers and Operator
+                  Row(children: [
+                    buildButton("4", Colors.white), 
+                    buildButton("5", Colors.white), 
+                    buildButton("6", Colors.white), 
+                    buildButton("x", Colors.blueAccent)
+                  ]),
+                  // Row 4: Numbers and Operator
+                  Row(children: [
+                    buildButton("1", Colors.white), 
+                    buildButton("2", Colors.white), 
+                    buildButton("3", Colors.white), 
+                    buildButton("-", Colors.blueAccent)
+                  ]),
+                  // Row 5: AC, Zero, Dot and Plus
+                  Row(children: [
+                    buildButton("AC", Colors.white, textColor: Colors.redAccent),
+                    buildButton("0", Colors.white), 
+                    buildButton(".", Colors.white), 
+                    buildButton("+", Colors.blueAccent)
+                  ]),
+                  // Row 6: Equals
+                  Row(children: [buildButton("=", Colors.blueAccent)]),
+                ],
+              ),
             ),
           ],
         ),
